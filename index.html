@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<meta name="description" content="AI-Based Accident Prevention System — See the danger before you can see it. Computer vision, YOLO object detection and vehicle-to-vehicle hazard warnings for blind intersections." />
+<meta name="keywords" content="AI accident prevention, YOLO, OpenCV, computer vision, V2V, road safety, ESP32" />
+<meta property="og:title" content="AI-Based Accident Prevention System" />
+<meta property="og:description" content="See the Danger Before You Can See It. AI vision that warns drivers about hazards hidden around blind corners." />
+<meta property="og:type" content="website" />
+<link rel="icon" href="data:," />
+<title>AI-Based Accident Prevention System — See the Danger Before You Can See It</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#030712; --bg2:#060b1a; --bg3:#0a1428;
+  --panel:rgba(255,255,255,.045); --panel2:rgba(255,255,255,.07);
+  --line:rgba(255,255,255,.09); --line2:rgba(0,180,255,.22);
+  --text:#eef4ff; --muted:#9db0cc; --muted2:#6f84a3;
+  --blue:#00a3ff; --cyan:#00e0ff; --cyan2:#38bdf8;
+  --green:#22c55e; --amber:#f59e0b; --red:#ef4444;
+  --radius:18px;
+  --font:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --display:'Sora',var(--font);
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+img,svg,canvas{display:block;max-width:100%}
+button{font-family:inherit;cursor:pointer;min-height:44px}
+.container{width:min(1180px,calc(100% - 40px));margin:0 auto}
+.section{padding:96px 0}
+.section-head{max-width:720px;margin-bottom:44px}
+.section-head.center{margin-left:auto;margin-right:auto;text-align:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);border:1px solid var(--line2);background:rgba(0,163,255,.08);padding:7px 12px;border-radius:999px;margin-bottom:16px}
+.eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan)}
+h1,h2,h3{font-family:var(--display);line-height:1.08;letter-spacing:-.02em;margin:0}
+h2{font-size:clamp(30px,4vw,44px);font-weight:700}
+h3{font-size:18px;font-weight:600}
+.lead{color:var(--muted);font-size:17px;line-height:1.7;margin:14px 0 0}
+.muted{color:var(--muted)}
+.small{font-size:13px;color:var(--muted2)}
+.mono{font-family:var(--mono)}
+
+/* NAV */
+.nav{position:fixed;inset:0 0 auto 0;z-index:50;backdrop-filter:blur(18px);background:rgba(3,7,18,.72);border-bottom:1px solid var(--line)}
+.nav-inner{height:72px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{display:flex;align-items:center;gap:12px;min-height:44px}
+.brand-mark{width:40px;height:40px;border-radius:11px;background:linear-gradient(145deg,#0ea5e9,#0369a1);display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,163,255,.35);flex:none}
+.brand-text{line-height:1.1}
+.brand-text strong{font-family:var(--display);font-size:15px;letter-spacing:-.01em;display:block}
+.brand-text span{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-links a{font-size:14px;font-weight:500;color:#c7d6ee;padding:10px 12px;border-radius:999px;min-height:40px;display:inline-flex;align-items:center}
+.nav-links a:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-cta{background:var(--blue);color:#fff !important;padding:10px 18px !important;margin-left:8px;box-shadow:0 6px 20px rgba(0,163,255,.35)}
+.nav-cta:hover{background:#0284c7 !important}
+.burger{display:none;width:44px;height:44px;border:1px solid var(--line);background:var(--panel);border-radius:10px;color:#fff;align-items:center;justify-content:center;font-size:20px}
+@media(max-width:980px){
+  .nav-links{position:absolute;top:72px;left:16px;right:16px;flex-direction:column;align-items:stretch;background:#081226;border:1px solid var(--line);border-radius:16px;padding:10px;display:none;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+  .nav-links.open{display:flex}
+  .nav-links a{padding:12px 14px}
+  .nav-cta{margin-left:0;text-align:center;justify-content:center}
+  .burger{display:inline-flex}
+}
+
+/* HERO */
+.hero{position:relative;padding:158px 0 84px;overflow:hidden;background:
+  radial-gradient(900px 500px at 85% -10%,rgba(0,163,255,.22),transparent 60%),
+  radial-gradient(700px 500px at -10% 30%,rgba(14,165,233,.12),transparent 60%),
+  linear-gradient(180deg,#050a18 0%,#030712 70%)}
+.hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse 90% 70% at 50% 0%,#000 30%,transparent 75%);pointer-events:none}
+.hero-grid{position:relative;display:grid;grid-template-columns:1.02fr .98fr;gap:48px;align-items:center}
+.hero h1{font-size:clamp(38px,5.4vw,64px);font-weight:800}
+.hero h1 .grad{color:var(--cyan)}
+.hero-tag{font-family:var(--display);font-size:clamp(19px,2.4vw,26px);font-weight:600;color:#dbeafe;margin-top:18px;line-height:1.35}
+.hero-tag em{font-style:normal;color:var(--cyan)}
+.hero p.intro{color:var(--muted);font-size:17px;max-width:560px;margin:16px 0 0}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border-radius:999px;padding:13px 24px;font-weight:600;font-size:15px;border:1px solid transparent;min-height:48px;transition:.2s}
+.btn-primary{background:var(--blue);color:#fff;box-shadow:0 10px 28px rgba(0,163,255,.35)}
+.btn-primary:hover{background:#0284c7;transform:translateY(-1px)}
+.btn-ghost{background:rgba(255,255,255,.05);border-color:var(--line);color:#e2e8f0;backdrop-filter:blur(8px)}
+.btn-ghost:hover{border-color:var(--line2);background:rgba(255,255,255,.09)}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:36px;max-width:560px}
+.stat{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:14px 16px;backdrop-filter:blur(10px)}
+.stat b{font-family:var(--display);font-size:20px;display:block;line-height:1.1}
+.stat span{font-size:12px;color:var(--muted);display:block;margin-top:4px;line-height:1.4}
+
+/* Hero visual */
+.hero-visual{position:relative}
+.view-card{border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border-radius:22px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55);backdrop-filter:blur(12px)}
+.view-top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.live-dot{display:inline-flex;align-items:center;gap:7px;color:#fca5a5}
+.live-dot i{width:7px;height:7px;border-radius:50%;background:var(--red);display:block;animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.scene{position:relative;aspect-ratio:4/3;background:#050b18;overflow:hidden}
+.scene canvas{width:100%;height:100%}
+.chip-row{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--line)}
+.chip{padding:13px 14px;border-right:1px solid var(--line)}
+.chip:last-child{border-right:0}
+.chip span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);display:block;font-family:var(--mono)}
+.chip b{font-size:14px;font-family:var(--mono);font-weight:600}
+.risk-high{color:#f87171}.risk-med{color:#fbbf24}.risk-low{color:#4ade80}
+.float-badge{position:absolute;display:flex;gap:10px;align-items:center;background:rgba(6,13,28,.88);border:1px solid var(--line);backdrop-filter:blur(12px);border-radius:14px;padding:11px 14px;box-shadow:0 16px 40px rgba(0,0,0,.5);font-size:13px}
+.float-badge b{display:block;font-size:13px;line-height:1.2}
+.float-badge span{color:var(--muted);font-size:12px}
+.fb1{left:-14px;bottom:88px}
+.fb2{right:-10px;top:74px}
+.fb-icon{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex:none}
+@media(max-width:1020px){.hero-grid{grid-template-columns:1fr}.fb1{left:8px}.fb2{right:8px}}
+@media(max-width:560px){.hero-stats{grid-template-columns:1fr 1fr 1fr;gap:8px}.stat{padding:11px}.stat b{font-size:16px}.float-badge{display:none}}
+
+/* Generic cards */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+@media(max-width:980px){.grid-4{grid-template-columns:1fr 1fr}.grid-3{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:26px;backdrop-filter:blur(10px)}
+.card:hover{border-color:rgba(0,180,255,.28)}
+.icon-box{width:46px;height:46px;border-radius:12px;background:rgba(0,163,255,.12);border:1px solid rgba(0,163,255,.22);display:grid;place-items:center;margin-bottom:16px;color:var(--cyan)}
+.card p{color:var(--muted);font-size:15px;margin:9px 0 0}
+.check-list{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:12px}
+.check-list li{display:flex;gap:11px;color:#dbe6f7;font-size:15px;align-items:flex-start}
+.check-list li::before{content:"✓";width:22px;height:22px;flex:none;border-radius:50%;background:rgba(34,197,94,.15);color:#4ade80;display:grid;place-items:center;font-size:12px;font-weight:700;margin-top:1px}
+.tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:5px 9px;border-radius:999px;border:1px solid var(--line)}
+.tag-live{color:#4ade80;border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.08)}
+.tag-plan{color:#fbbf24;border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.08)}
+.tag-future{color:#93c5fd;border-color:rgba(147,197,253,.3);background:rgba(59,130,246,.08)}
+
+/* How it works */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:900px){.steps{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.steps{grid-template-columns:1fr}}
+.step{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:24px}
+.step-num{font-family:var(--mono);font-size:12px;color:var(--cyan);letter-spacing:.14em;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.step-num i{font-style:normal;width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;color:#fff;background:rgba(0,163,255,.12);font-family:var(--display);font-weight:700}
+
+/* Tech */
+.tech-card{text-align:left}
+.tech-card .mono-top{font-family:var(--mono);font-size:12px;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+
+/* Simulation / Spline placeholder */
+.sim-wrap{display:grid;grid-template-columns:1.55fr .85fr;gap:20px;align-items:stretch}
+@media(max-width:900px){.sim-wrap{grid-template-columns:1fr}}
+.sim-stage{position:relative;border:1px solid var(--line);border-radius:20px;overflow:hidden;background:#040914;min-height:420px}
+.sim-stage canvas{width:100%;height:100%;position:absolute;inset:0}
+.sim-overlay{position:absolute;left:16px;top:16px;right:16px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;pointer-events:none}
+.pill{background:rgba(3,7,18,.82);border:1px solid var(--line);backdrop-filter:blur(10px);border-radius:999px;padding:7px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#cbd5e1}
+.sim-legend{display:grid;gap:12px}
+.legend-item{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 16px}
+.legend-dot{width:12px;height:12px;border-radius:3px;margin-top:5px;flex:none}
+.embed-note{margin-top:16px;border:1px dashed rgba(0,180,255,.35);background:rgba(0,163,255,.05);border-radius:14px;padding:16px 18px;font-size:14px;color:var(--muted)}
+.embed-note code{font-family:var(--mono);color:var(--cyan);font-size:13px;word-break:break-all}
+
+/* Dashboard */
+.dash{border:1px solid var(--line);border-radius:22px;overflow:hidden;background:linear-gradient(180deg,#081226,#050b18);box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.dash-head{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.03)}
+.dash-head h3{font-size:17px}
+.sim-label{display:inline-flex;align-items:center;gap:8px;background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.35);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:7px 11px;border-radius:999px}
+.scenario-bar{display:flex;flex-wrap:wrap;gap:8px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.scenario-btn{border:1px solid var(--line);background:rgba(255,255,255,.04);color:#cbd5e1;border-radius:999px;padding:9px 16px;font-weight:600;font-size:13px;min-height:40px}
+.scenario-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.dash-grid{display:grid;grid-template-columns:1.6fr .9fr;gap:0}
+@media(max-width:900px){.dash-grid{grid-template-columns:1fr}}
+.feed{position:relative;min-height:360px;background:#030812;border-right:1px solid var(--line)}
+.feed canvas{position:absolute;inset:0;width:100%;height:100%}
+.feed-hud{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;pointer-events:none}
+.dash-side{padding:18px;display:grid;gap:14px;align-content:start}
+.panel{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:16px}
+.panel h4{margin:0 0 10px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:var(--mono);font-weight:600}
+.risk-meter{height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin:10px 0 8px}
+.risk-fill{height:100%;border-radius:999px;transition:width .5s ease,background .5s ease}
+.obj-row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px}
+.obj-row:last-child{border-bottom:0}
+.obj-row span{color:var(--muted)}
+.alert-box{border-radius:14px;padding:15px 16px;font-size:14px;display:flex;gap:12px;align-items:flex-start;border:1px solid}
+.alert-high{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:#fecaca}
+.alert-med{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.4);color:#fde68a}
+.alert-low{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.35);color:#bbf7d0}
+.dash-controls{display:flex;flex-wrap:wrap;gap:10px;padding:16px 20px;border-top:1px solid var(--line)}
+
+/* Timeline future */
+.timeline{display:grid;gap:0;max-width:820px}
+.tl-item{display:grid;grid-template-columns:44px 1fr;gap:18px;position:relative;padding-bottom:28px}
+.tl-item::before{content:"";position:absolute;left:21px;top:44px;bottom:0;width:1px;background:var(--line)}
+.tl-item:last-child::before{display:none}
+.tl-dot{width:44px;height:44px;border-radius:50%;border:1px solid var(--line2);background:#081226;display:grid;place-items:center;font-family:var(--mono);font-size:13px;color:var(--cyan);z-index:1}
+
+/* Team */
+.team-card{text-align:center;padding:32px 24px}
+.avatar{width:76px;height:76px;border-radius:50%;margin:0 auto 16px;background:linear-gradient(145deg,#0ea5e9,#1e3a5f);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:26px;color:#fff;border:2px solid rgba(0,180,255,.4)}
+.contact-row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px}
+.contact-row a{border:1px solid var(--line);background:rgba(255,255,255,.04);padding:10px 16px;border-radius:999px;font-size:14px;min-height:44px;display:inline-flex;align-items:center}
+.contact-row a:hover{border-color:var(--line2)}
+
+/* Footer */
+footer{border-top:1px solid var(--line);background:#02050d;padding:52px 0 28px;margin-top:0}
+.footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:32px}
+@media(max-width:760px){.footer-grid{grid-template-columns:1fr}}
+footer h4{font-family:var(--display);font-size:15px;margin:0 0 14px}
+footer a,footer p{color:var(--muted);font-size:14px}
+footer ul{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.footer-bottom{border-top:1px solid var(--line);margin-top:36px;padding-top:20px;display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;font-size:13px;color:var(--muted2)}
+
+/* Reveal — content is visible by default so it always renders in full-page views;
+   the animation is an enhancement applied when the element enters the viewport. */
+.reveal{opacity:1;transform:none}
+.reveal.visible{animation:fadeUp .7s ease both}
+@keyframes fadeUp{from{opacity:.25;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.reveal.visible{animation:none}html{scroll-behavior:auto}.live-dot i{animation:none}}
+.alt{background:linear-gradient(180deg,transparent,rgba(10,20,40,.55),transparent)}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<header class="nav">
+  <div class="container nav-inner">
+    <a class="brand" href="#home" aria-label="AI Accident Prevention System — home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3.2" fill="#fff"/></svg>
+      </span>
+      <span class="brand-text"><strong>VisionGuard AI</strong><span>Accident Prevention</span></span>
+    </a>
+    <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false">☰</button>
+    <nav class="nav-links" id="navLinks" aria-label="Primary">
+      <a href="#about">About</a>
+      <a href="#problem">Problem</a>
+      <a href="#how">How It Works</a>
+      <a href="#tech">Technology</a>
+      <a href="#simulation">Simulation</a>
+      <a href="#future">Future Scope</a>
+      <a href="#team">Team</a>
+      <a class="nav-cta" href="#dashboard">View Live System →</a>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <div class="container hero-grid">
+    <div>
+      <span class="eyebrow">AI • Computer Vision • V2V Safety</span>
+      <h1>AI-Based Accident<br>Prevention <span class="grad">System</span></h1>
+      <p class="hero-tag">“See the Danger <em>Before You Can See It.</em>”</p>
+      <p class="intro">A roadside camera watches the blind corner you can’t. Our AI detects hidden pedestrians and vehicles, calculates collision risk in real time, and warns the approaching driver — seconds before the hazard enters their line of sight.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#about">Explore Project ↓</a>
+        <a class="btn btn-ghost" href="#dashboard">● View Live System</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><b>3 Objects</b><span>Tracked simultaneously in the prototype scene</span></div>
+        <div class="stat"><b>6 Steps</b><span>From camera frame to driver warning</span></div>
+        <div class="stat"><b>Early</b><span>Warning before the hazard is visible to the driver</span></div>
+      </div>
+      <p class="small" style="margin-top:14px">Prototype stage — detection runs on recorded / simulated scenes. Hardware integration with ESP32 is planned, not yet deployed on live roads.</p>
+    </div>
+
+    <div class="hero-visual">
+      <div class="view-card">
+        <div class="view-top"><span>Roadside Camera — CAM 01 · Blind Intersection</span><span class="live-dot"><i></i> SIMULATED PREVIEW</span></div>
+        <div class="scene"><canvas id="heroCanvas" aria-label="Simulated roadside camera view showing Vehicle A, Vehicle B and a pedestrian with AI detection boxes"></canvas></div>
+        <div class="chip-row">
+          <div class="chip"><span>Detection (Sim)</span><b style="color:#4ade80">● ACTIVE</b></div>
+          <div class="chip"><span>Risk Level (Sim)</span><b id="heroRisk" class="risk-high">HIGH</b></div>
+          <div class="chip"><span>Vehicle B</span><b>SIM WARNING</b></div>
+        </div>
+      </div>
+      <div class="float-badge fb2"><span class="fb-icon" style="background:rgba(239,68,68,.15)">⚠</span><span><b>Collision risk detected (simulation)</b><span>Pedestrian hidden behind Vehicle A</span></span></div>
+      <div class="float-badge fb1"><span class="fb-icon" style="background:rgba(0,163,255,.15)">◎</span><span><b>YOLO + OpenCV</b><span>Object detection pipeline — simulated feed</span></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="section" id="about">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">About the Project</span>
+      <h2>An extra set of eyes, exactly where drivers are blind.</h2>
+      <p class="lead">Most serious crashes at intersections don’t happen because drivers are careless — they happen because the hazard was physically hidden: behind a parked truck, a building corner, or another vehicle. This system moves the “eyes” to the roadside, where the full scene is visible.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card reveal">
+        <h3>The concept</h3>
+        <p>A fixed roadside camera continuously observes a blind intersection. A YOLO-based detection model identifies vehicles and pedestrians in every frame, tracks their movement, and estimates whether their paths will collide. When risk crosses a threshold, a warning is sent to the approaching vehicle — giving its driver time to slow down before the hazard appears.</p>
+        <p>The current prototype demonstrates this full loop in simulation: detection, risk calculation, inter-vehicle hazard communication, and an early driver warning.</p>
+      </div>
+      <div class="card reveal">
+        <h3>Project objectives</h3>
+        <ul class="check-list">
+          <li>Detect pedestrians and vehicles hidden from a driver’s view at blind spots and intersections.</li>
+          <li>Calculate collision risk from object position, direction and closing speed.</li>
+          <li>Communicate hazard information from one vehicle / roadside unit to another vehicle.</li>
+          <li>Deliver an early, clear warning so the driver can brake or slow down in time.</li>
+          <li>Demonstrate the complete prevention loop in a working prototype and simulation.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="section alt" id="problem">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Problem Statement</span>
+      <h2>Drivers can only react to what they can see.</h2>
+      <p class="lead">By the time a hidden hazard becomes visible, there is often less than a second left to react. Four failure modes cause most of these crashes:</p>
+    </div>
+    <div class="grid-4">
+      <div class="card reveal">
+        <div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-6 10-6c2 0 3.7.7 5.2 1.7M22 12s-3.5 6-10 6c-2 0-3.7-.7-5.2-1.7"/><path d="M4 4l16 16"/></svg></div>
+        <h3>Blind spots</h3><p>Buildings, parked vehicles and road geometry create corners where an entire lane of traffic is invisible until the last moment.</p>
+      </div>
+      <div class="card reveal">
+        <div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="13" cy="4.5" r="1.8"/><path d="M13 7v5l3 3M13 12l-2.5 2L9 20M13 12l1 4 2 4"/></svg></div>
+        <h3>Hidden pedestrians</h3><p>A pedestrian stepping out from behind a bus or truck is visible to a roadside camera long before the driver can see them.</p>
+      </div>
+      <div class="card reveal">
+        <div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 16l2-6h11l3 4h2v2h-2.2M3 16h13M3 16v3M16 19v-3"/><circle cx="7" cy="19" r="1.6"/><circle cx="16" cy="19" r="1.6"/></svg></div>
+        <h3>Sudden vehicle obstacles</h3><p>A vehicle emerging fast from a side lane or driveway gives the driver on the main road almost no braking distance.</p>
+      </div>
+      <div class="card reveal">
+        <div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 18h18M5 18a7 7 0 0 1 14 0M12 11V7M12 7l-2-2M12 7l2-2"/><circle cx="12" cy="18" r="1" fill="currentColor"/></svg></div>
+        <h3>Poor visibility &amp; slow reaction</h3><p>Fog, rain, darkness and glare shrink visibility further — and human reaction time adds roughly a second before braking even begins.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">How It Works</span>
+      <h2>From camera frame to driver warning, in six steps.</h2>
+    </div>
+    <div class="steps">
+      <div class="step reveal"><div class="step-num">STEP <i>1</i></div><h3>Camera detects</h3><p class="muted" style="font-size:15px;margin:8px 0 0">A roadside camera observes the blind intersection and captures pedestrians and vehicles the driver cannot see.</p></div>
+      <div class="step reveal"><div class="step-num">STEP <i>2</i></div><h3>AI identifies objects</h3><p class="muted" style="font-size:15px;margin:8px 0 0">YOLO, running on OpenCV frames, classifies and tracks each object — vehicle, pedestrian — with bounding boxes and confidence scores.</p></div>
+      <div class="step reveal"><div class="step-num">STEP <i>3</i></div><h3>Risk is calculated</h3><p class="muted" style="font-size:15px;margin:8px 0 0">The system estimates trajectories and closing speeds. If two paths intersect within a critical time window, risk escalates: Low → Medium → High.</p></div>
+      <div class="step reveal"><div class="step-num">STEP <i>4</i></div><h3>Hazard is communicated</h3><p class="muted" style="font-size:15px;margin:8px 0 0">The hazard information — what, where, and how urgent — is transmitted to the other approaching vehicle (Vehicle B).</p></div>
+      <div class="step reveal"><div class="step-num">STEP <i>5</i></div><h3>Driver is warned early</h3><p class="muted" style="font-size:15px;margin:8px 0 0">Vehicle B’s driver receives a visual and audible early warning while the hazard is still hidden — gaining seconds to slow down.</p></div>
+      <div class="step reveal"><div class="step-num">STEP <i>6</i></div><h3>Collision is prevented</h3><p class="muted" style="font-size:15px;margin:8px 0 0">The prototype demonstrates the outcome: the warned vehicle slows in time, and the collision that would have happened, doesn’t.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
+<section class="section alt" id="tech">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Technology Stack</span>
+      <h2>Built on a proven computer-vision pipeline.</h2>
+      <p class="lead">Status is labelled honestly: what runs in the prototype today, and what is planned for the hardware phase.</p>
+    </div>
+    <div class="grid-3">
+      <div class="card tech-card reveal"><div class="mono-top"><span>Language</span><span class="tag tag-live">In Prototype</span></div><h3>Python</h3><p>Core language for the detection pipeline, risk engine and simulation logic.</p></div>
+      <div class="card tech-card reveal"><div class="mono-top"><span>Detection Model</span><span class="tag tag-live">In Prototype</span></div><h3>YOLO</h3><p>Real-time object detection — locates and classifies vehicles and pedestrians in each camera frame.</p></div>
+      <div class="card tech-card reveal"><div class="mono-top"><span>Vision Library</span><span class="tag tag-live">In Prototype</span></div><h3>OpenCV</h3><p>Frame capture, image processing, tracking support and drawing the live detection overlay.</p></div>
+      <div class="card tech-card reveal"><div class="mono-top"><span>Intelligence</span><span class="tag tag-live">In Prototype</span></div><h3>Machine Learning</h3><p>Learned object classes and motion patterns that underpin detection and collision-risk estimation.</p></div>
+      <div class="card tech-card reveal"><div class="mono-top"><span>Hardware</span><span class="tag tag-plan">Planned</span></div><h3>ESP32</h3><p>Planned hardware integration for roadside-to-vehicle communication and in-vehicle warning units. Not yet deployed.</p></div>
+      <div class="card tech-card reveal"><div class="mono-top"><span>Interface</span><span class="tag tag-live">In Prototype</span></div><h3>React / JavaScript</h3><p>Front-end technology for the live dashboard, simulation views and warning interface.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3D SIMULATION -->
+<section class="section" id="simulation">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">3D Prototype / Simulation</span>
+      <h2>The blind-intersection scenario, visualised.</h2>
+      <p class="lead">Vehicle A blocks the view. A pedestrian is hidden behind it. Vehicle B approaches with no line of sight — until the roadside camera warns it. Press play to run the demonstration.</p>
+    </div>
+    <div class="sim-wrap reveal">
+      <div class="sim-stage">
+        <canvas id="simCanvas" aria-label="Top-down simulation of a blind intersection with Vehicle A, Vehicle B, a pedestrian and a roadside camera"></canvas>
+        <div class="sim-overlay"><span class="pill">Top-down · Intersection View</span><span class="pill" id="simStatus">❚❚ Simulation paused</span></div>
+      </div>
+      <div class="sim-legend">
+        <div class="legend-item"><span class="legend-dot" style="background:#38bdf8"></span><div><b>Vehicle A</b><p class="muted" style="margin:2px 0 0;font-size:14px">Stationary / slow vehicle creating the blind spot.</p></div></div>
+        <div class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span><div><b>Vehicle B</b><p class="muted" style="margin:2px 0 0;font-size:14px">Approaching vehicle. Receives the early warning and slows down.</p></div></div>
+        <div class="legend-item"><span class="legend-dot" style="background:#ef4444"></span><div><b>Pedestrian</b><p class="muted" style="margin:2px 0 0;font-size:14px">Hidden behind Vehicle A, crossing into Vehicle B’s path.</p></div></div>
+        <div class="legend-item"><span class="legend-dot" style="background:#22c55e"></span><div><b>Roadside Camera</b><p class="muted" style="margin:2px 0 0;font-size:14px">Sees the full scene and feeds the AI detection pipeline.</p></div></div>
+        <button class="btn btn-primary" id="simBtn" style="width:100%">▶ Run Simulation Demo</button>
+      </div>
+    </div>
+    <div class="embed-note reveal">
+      <b style="color:#e2e8f0">Spline 3D scene — integration slot.</b> The interactive Spline model of this intersection will be embedded in the stage above. To connect it, replace the canvas stage with your Spline embed: <code>&lt;iframe src="YOUR_SPLINE_SCENE_URL" …&gt;</code> or the Spline viewer component. The 2D demonstration above runs standalone until then.
+    </div>
+  </div>
+</section>
+
+<!-- LIVE DASHBOARD -->
+<section class="section alt" id="dashboard">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Live AI Dashboard</span>
+      <h2>Live system view — simulated feed.</h2>
+      <p class="lead">This dashboard demonstrates the operator interface with sample simulation data. It is <b style="color:#fcd34d">not</b> connected to a real camera or live AI model yet — every value below is generated by the built-in scenario simulator.</p>
+    </div>
+
+    <div class="dash reveal">
+      <div class="dash-head">
+        <h3>◉ VisionGuard — Monitoring Console</h3>
+        <span class="sim-label">⚠ Simulated Data — Demo Only</span>
+      </div>
+      <div class="scenario-bar" role="group" aria-label="Choose simulation scenario">
+        <button class="scenario-btn active" data-scenario="intersection">Blind Intersection</button>
+        <button class="scenario-btn" data-scenario="pedestrian">Pedestrian Crossing</button>
+        <button class="scenario-btn" data-scenario="highway">Highway Merge</button>
+      </div>
+      <div class="dash-grid">
+        <div class="feed">
+          <canvas id="dashCanvas" aria-label="Simulated camera feed with AI detection bounding boxes"></canvas>
+          <div class="feed-hud"><span class="pill">CAM 01 · Simulated Feed</span><span class="pill" id="feedClock">--:--:--</span></div>
+        </div>
+        <div class="dash-side">
+          <div id="dashAlert" class="alert-box alert-high"><span style="font-size:20px">⚠</span><span><b id="alertTitle">HIGH RISK — Slow down now</b><br><span id="alertText">Pedestrian hidden behind Vehicle A, entering Vehicle B’s path.</span></span></div>
+          <div class="panel">
+            <h4>Collision Risk</h4>
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><b id="riskLabel" class="risk-high" style="font-family:var(--display);font-size:22px">HIGH</b><span class="mono" id="riskScore" style="font-size:13px;color:var(--muted)">Risk index 87 / 100</span></div>
+            <div class="risk-meter"><div class="risk-fill" id="riskFill" style="width:87%;background:var(--red)"></div></div>
+            <span class="small">Low &lt; 35 &nbsp;·&nbsp; Medium 35–70 &nbsp;·&nbsp; High &gt; 70</span>
+          </div>
+          <div class="panel">
+            <h4>Detected Objects</h4>
+            <div id="objList"></div>
+          </div>
+          <div class="panel">
+            <h4>Vehicle Safety Status</h4>
+            <div class="obj-row"><span>Vehicle A</span><b>Tracked · Stationary</b></div>
+            <div class="obj-row"><span>Vehicle B</span><b id="vehBStatus" style="color:#f87171">Warning active — braking advised</b></div>
+            <div class="obj-row"><span>Detection engine</span><b style="color:#4ade80">● Running (simulated)</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="dash-controls">
+        <button class="btn btn-primary" id="dashToggle" style="padding:10px 20px;min-height:44px">❚❚ Pause Simulation</button>
+        <button class="btn btn-ghost" id="dashReset" style="padding:10px 20px;min-height:44px">↺ Reset Scenario</button>
+        <span class="small" style="align-self:center">Real camera + YOLO feed will replace this simulator during hardware integration.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFITS -->
+<section class="section" id="benefits">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Benefits &amp; Applications</span>
+      <h2>Where this system makes roads safer.</h2>
+    </div>
+    <div class="grid-3">
+      <div class="card reveal"><div class="icon-box">⬢</div><h3>Smart cities</h3><p>Roadside units at dangerous junctions become part of city safety infrastructure, feeding traffic and hazard data to the network.</p></div>
+      <div class="card reveal"><div class="icon-box">↗</div><h3>Highway safety</h3><p>Early warning of sudden obstacles, stopped vehicles and merge conflicts at highway speeds, where reaction time matters most.</p></div>
+      <div class="card reveal"><div class="icon-box">◎</div><h3>Pedestrian protection</h3><p>The people most at risk — pedestrians hidden from drivers — are exactly the ones a roadside camera can see first.</p></div>
+      <div class="card reveal"><div class="icon-box">⬣</div><h3>Autonomous vehicles</h3><p>Infrastructure-side perception complements on-board sensors, giving self-driving systems information beyond their own line of sight.</p></div>
+      <div class="card reveal"><div class="icon-box">✛</div><h3>Blind intersection safety</h3><p>The core use case: T-junctions, building corners and parked-vehicle obstructions where neither driver can see the other.</p></div>
+      <div class="card reveal"><div class="icon-box">◉</div><h3>Fleet &amp; public transport</h3><p>Buses and trucks have the largest blind spots of all — roadside warnings protect both their drivers and everyone around them.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FUTURE SCOPE -->
+<section class="section alt" id="future">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Future Scope</span>
+      <h2>The roadmap from prototype to road.</h2>
+      <p class="lead">Everything below is <b>planned work</b> — it is not part of the current prototype and is not claimed as implemented.</p>
+    </div>
+    <div class="timeline reveal">
+      <div class="tl-item"><span class="tl-dot">01</span><div><h3>Real-time hardware integration <span class="tag tag-plan" style="margin-left:8px">Planned</span></h3><p class="muted" style="margin:6px 0 0;font-size:15px">Replace simulated feeds with a live roadside camera stream processed in real time.</p></div></div>
+      <div class="tl-item"><span class="tl-dot">02</span><div><h3>ESP32 communication <span class="tag tag-plan" style="margin-left:8px">Planned</span></h3><p class="muted" style="margin:6px 0 0;font-size:15px">ESP32 units in vehicles receive hazard messages wirelessly and drive the in-vehicle warning display and buzzer.</p></div></div>
+      <div class="tl-item"><span class="tl-dot">03</span><div><h3>Automatic emergency braking <span class="tag tag-future" style="margin-left:8px">Future</span></h3><p class="muted" style="margin:6px 0 0;font-size:15px">Escalate from warning the driver to actuating braking when the driver does not respond in time.</p></div></div>
+      <div class="tl-item"><span class="tl-dot">04</span><div><h3>Advanced collision prediction <span class="tag tag-future" style="margin-left:8px">Future</span></h3><p class="muted" style="margin:6px 0 0;font-size:15px">Trajectory forecasting over longer horizons, with weather, speed and road-condition awareness.</p></div></div>
+      <div class="tl-item"><span class="tl-dot">05</span><div><h3>Multi-vehicle communication (V2X) <span class="tag tag-future" style="margin-left:8px">Future</span></h3><p class="muted" style="margin:6px 0 0;font-size:15px">One hazard broadcast to every approaching vehicle — a cooperative safety network, not just a single warning.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TEAM -->
+<section class="section" id="team">
+  <div class="container">
+    <div class="section-head center reveal">
+      <span class="eyebrow">Team &amp; Contact</span>
+      <h2>Built by a developer who wants safer roads.</h2>
+    </div>
+    <div class="grid-3">
+      <div class="card team-card reveal">
+        <div class="avatar">PB</div>
+        <h3>Punit Bhattoo</h3>
+        <p style="margin-top:6px">Developer &amp; Project Lead<br>AI-Based Accident Prevention System</p>
+        <p class="small" style="margin-top:10px">MCA Student · Applied AI &amp; Data Intelligence (Vishlesan i-Hub, IIT Patna)</p>
+        <div class="contact-row">
+          <a href="mailto:punitbhattoo60@gmail.com">✉ punitbhattoo60@gmail.com</a>
+          <a href="tel:+919588142027">☎ +91 95881 42027</a>
+        </div>
+      </div>
+      <div class="card team-card reveal">
+        <div class="avatar" style="font-size:20px">CGC</div>
+        <h3>CGC University, Chandigarh</h3>
+        <p style="margin-top:6px">Institution<br>Master of Computer Applications (MCA) — Pursuing</p>
+        <p class="small" style="margin-top:10px">BCA — PIET College, Haryana</p>
+        <div class="contact-row"><a href="#team">Kaithal, Haryana, India</a></div>
+      </div>
+      <div class="card team-card reveal">
+        <div class="avatar" style="font-size:20px">M</div>
+        <h3>Project Mentor</h3>
+        <p style="margin-top:6px">Faculty Mentor<br>Department of Computer Applications</p>
+        <p class="small" style="margin-top:10px">Guidance on project design, computer-vision methodology and prototype evaluation. Mentor name to be updated on confirmation.</p>
+        <div class="contact-row"><a href="mailto:punitbhattoo60@gmail.com">Contact via developer →</a></div>
+      </div>
+    </div>
+    <div class="card reveal" style="margin-top:20px;text-align:center;padding:34px">
+      <h3>Interested in this project?</h3>
+      <p class="muted" style="max-width:560px;margin:10px auto 0">For project demonstrations, collaboration, or questions about the detection pipeline and simulation, reach out directly.</p>
+      <div class="contact-row"><a href="mailto:punitbhattoo60@gmail.com" style="background:var(--blue);color:#fff;border-color:var(--blue)">✉ Email the Developer</a><a href="#dashboard">View the Live Demo →</a></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h4>VisionGuard AI — Accident Prevention System</h4>
+        <p>“See the Danger Before You Can See It.” An AI-based prototype that detects hidden road hazards with computer vision and warns drivers before the danger is visible.</p>
+        <p class="small" style="margin-top:12px">Prototype &amp; simulation stage. ESP32 hardware integration, live camera deployment and automatic braking are planned — not yet implemented.</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="#about">About the Project</a></li>
+          <li><a href="#how">How It Works</a></li>
+          <li><a href="#simulation">3D Simulation</a></li>
+          <li><a href="#dashboard">Live Dashboard</a></li>
+          <li><a href="#future">Future Scope</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Technology</h4>
+        <ul>
+          <li>Python · YOLO · OpenCV</li>
+          <li>Machine Learning</li>
+          <li>React / JavaScript</li>
+          <li>ESP32 (planned)</li>
+          <li><a href="mailto:punitbhattoo60@gmail.com">punitbhattoo60@gmail.com</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Punit Bhattoo · CGC University, Chandigarh. All rights reserved.</span>
+      <span>Dashboard data is simulated for demonstration.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  /* Mobile nav */
+  var burger=document.getElementById('burger'), links=document.getElementById('navLinks');
+  burger.addEventListener('click',function(){
+    var open=links.classList.toggle('open');
+    burger.setAttribute('aria-expanded',open?'true':'false');
+    burger.textContent=open?'✕':'☰';
+  });
+  links.addEventListener('click',function(e){ if(e.target.tagName==='A'){ links.classList.remove('open'); burger.textContent='☰'; }});
+
+  /* Reveal on scroll */
+  var io=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add('visible');io.unobserve(en.target);}})},{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
+
+  /* ---------- Shared scene renderer (top-down intersection) ---------- */
+  function fitCanvas(cv){
+    var r=cv.getBoundingClientRect(), d=Math.min(window.devicePixelRatio||1,2);
+    cv.width=Math.max(300,r.width)*d; cv.height=Math.max(220,r.height)*d;
+    var ctx=cv.getContext('2d'); ctx.setTransform(d,0,0,d,0,0);
+    return {ctx:ctx,w:r.width,h:r.height};
+  }
+  function drawScene(ctx,w,h,t,opts){
+    opts=opts||{};
+    ctx.clearRect(0,0,w,h);
+    /* ground */
+    ctx.fillStyle='#050b18'; ctx.fillRect(0,0,w,h);
+    var cx=w*0.52, cy=h*0.52, rw=Math.min(w,h)*0.30;
+    /* roads */
+    ctx.fillStyle='#101b31';
+    ctx.fillRect(0,cy-rw/2,w,rw); ctx.fillRect(cx-rw/2,0,rw,h);
+    /* building block (blind corner) */
+    ctx.fillStyle='#0d1526'; ctx.strokeStyle='rgba(120,160,220,.25)'; ctx.lineWidth=1;
+    ctx.fillRect(0,0,cx-rw/2,cy-rw/2); ctx.strokeRect(0,0,cx-rw/2,cy-rw/2);
+    ctx.fillStyle='rgba(150,180,230,.35)'; ctx.font='10px JetBrains Mono';
+    ctx.fillText('BUILDING — BLIND CORNER',12,20);
+    /* lane dashes */
+    ctx.strokeStyle='rgba(255,255,255,.28)'; ctx.setLineDash([10,10]); ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(cx-rw/2,cy); ctx.moveTo(cx+rw/2,cy); ctx.lineTo(w,cy);
+    ctx.moveTo(cx,0); ctx.lineTo(cx,cy-rw/2); ctx.moveTo(cx,cy+rw/2); ctx.lineTo(cx,h); ctx.stroke(); ctx.setLineDash([]);
+    /* camera FOV */
+    var camX=cx-rw/2-6, camY=cy-rw/2-6;
+    var grad=ctx.createRadialGradient(camX,camY,4,camX,camY,rw*1.7);
+    grad.addColorStop(0,'rgba(34,197,94,.20)'); grad.addColorStop(1,'rgba(34,197,94,0)');
+    ctx.fillStyle=grad; ctx.beginPath(); ctx.moveTo(camX,camY);
+    ctx.arc(camX,camY,rw*1.7,-0.15,1.05); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#22c55e'; ctx.beginPath(); ctx.arc(camX,camY,6,0,7); ctx.fill();
+    ctx.fillStyle='#bbf7d0'; ctx.font='600 10px JetBrains Mono'; ctx.fillText('CAM 01',camX-14,camY-12);
+
+    /* Vehicle A — stationary, blocking view (left lane) */
+    var aX=cx-rw*0.95, aY=cy-16;
+    drawVehicle(ctx,aX,aY,54,30,'#38bdf8','VEHICLE A',0);
+    /* Pedestrian — crosses upward from behind Vehicle A */
+    var pProg=(t%9000)/9000; /* 0..1 loop */
+    var pedY=cy+rw*0.55 - pProg*rw*1.25;
+    var pedX=aX+44;
+    /* Vehicle B — approaches from right, slows when warned */
+    var cycle=(t%9000)/9000;
+    var bStart=w+50, bStop=cx+rw*0.85;
+    var bX;
+    if(cycle<0.45){ bX=bStart-(bStart-bStop)*(cycle/0.45); }
+    else if(cycle<0.8){ bX=bStop; } /* stopped / slowed after warning */
+    else { bX=bStop-(bStop-(cx-rw*1.4))*((cycle-0.8)/0.2); }
+    var bY=cy+2;
+    var warned=cycle>=0.18 && cycle<0.85;
+    drawVehicle(ctx,bX,bY,54,30,'#f59e0b','VEHICLE B',Math.PI);
+    /* pedestrian dot + box */
+    ctx.strokeStyle='#ef4444'; ctx.lineWidth=2;
+    ctx.strokeRect(pedX-11,pedY-11,22,22);
+    ctx.fillStyle='#ef4444'; ctx.beginPath(); ctx.arc(pedX,pedY,5,0,7); ctx.fill();
+    ctx.fillStyle='#fca5a5'; ctx.font='600 10px JetBrains Mono';
+    ctx.fillText('PEDESTRIAN  '+(92+Math.round(Math.sin(t/300)*3))+'%',pedX-34,pedY-18);
+    /* warning link CAM -> B */
+    if(warned){
+      ctx.strokeStyle='rgba(239,68,68,'+(0.45+0.35*Math.sin(t/160))+')'; ctx.lineWidth=2; ctx.setLineDash([6,6]);
+      ctx.beginPath(); ctx.moveTo(camX,camY); ctx.lineTo(bX,bY-20); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle='#f87171'; ctx.font='700 11px JetBrains Mono';
+      ctx.fillText('⚠ WARNING → VEHICLE B', bX-58, bY-54);
+      /* stop line glow */
+      ctx.fillStyle='rgba(239,68,68,.5)'; ctx.fillRect(bStop+34,cy-rw/2,4,rw);
+    }
+    if(opts.hud){
+      ctx.fillStyle='rgba(3,7,18,.65)'; ctx.fillRect(10,h-30,240,20);
+      ctx.fillStyle='#7dd3fc'; ctx.font='11px JetBrains Mono';
+      ctx.fillText(warned?'STATUS: WARNING SENT — VEHICLE B SLOWING':'STATUS: MONITORING INTERSECTION',16,h-16);
+    }
+    return {warned:warned, pedProg:pProg};
+  }
+  function drawVehicle(ctx,x,y,vw,vh,color,label,rot){
+    ctx.save(); ctx.translate(x,y); if(rot)ctx.rotate(rot);
+    ctx.fillStyle='rgba(0,0,0,.45)'; roundRect(ctx,-vw/2+2,-vh/2+3,vw,vh,7); ctx.fill();
+    ctx.fillStyle=color; roundRect(ctx,-vw/2,-vh/2,vw,vh,7); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.75)'; roundRect(ctx,-vw/6,-vh/2+4,vw/3,vh-8,4); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle=color; ctx.lineWidth=1.6; ctx.strokeRect(x-vw/2-6,y-vh/2-6,vw+12,vh+12);
+    ctx.fillStyle='#e0f2fe'; ctx.font='600 10px JetBrains Mono'; ctx.fillText(label,x-vw/2-4,y-vh/2-12);
+  }
+  function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+  /* ---------- Hero canvas ---------- */
+  var heroCv=document.getElementById('heroCanvas'), heroState=null;
+  function heroLoop(t){
+    if(!heroState) heroState=fitCanvas(heroCv);
+    drawScene(heroState.ctx,heroState.w,heroState.h,t,{hud:false});
+    requestAnimationFrame(heroLoop);
+  }
+  requestAnimationFrame(heroLoop);
+
+  /* ---------- Simulation stage ---------- */
+  var simCv=document.getElementById('simCanvas'), simState=null, simRunning=false, simStart=0, simBtn=document.getElementById('simBtn'), simStatus=document.getElementById('simStatus');
+  function simLoop(t){
+    if(!simRunning) return;
+    if(!simState) simState=fitCanvas(simCv);
+    drawScene(simState.ctx,simState.w,simState.h,t-simStart,{hud:true});
+    requestAnimationFrame(simLoop);
+  }
+  function simDrawOnce(){
+    if(!simState) simState=fitCanvas(simCv);
+    drawScene(simState.ctx,simState.w,simState.h,2600,{hud:true});
+  }
+  simDrawOnce();
+  simBtn.addEventListener('click',function(){
+    simRunning=!simRunning;
+    if(simRunning){ simStart=performance.now(); simBtn.textContent='❚❚ Pause Simulation'; simStatus.textContent='▶ Simulation running'; requestAnimationFrame(simLoop); }
+    else { simBtn.textContent='▶ Run Simulation Demo'; simStatus.textContent='❚❚ Simulation paused'; }
+  });
+  /* ---------- Live dashboard ---------- */
+  var scenarios={
+    intersection:{title:'HIGH RISK — Slow down now',text:'Pedestrian hidden behind Vehicle A, entering Vehicle B’s path.',risk:87,label:'HIGH',cls:'risk-high',color:'#ef4444',alert:'alert-high',
+      objects:[['Pedestrian','Hidden · crossing · 96% conf.'],['Vehicle A','Stationary · occluding view'],['Vehicle B','Approaching · 42 km/h → braking']],vehB:['Warning active — braking advised','#f87171']},
+    pedestrian:{title:'MEDIUM RISK — Caution',text:'Pedestrian near the kerb at a marked crossing. Vehicle B approaching at moderate speed.',risk:52,label:'MEDIUM',cls:'risk-med',color:'#f59e0b',alert:'alert-med',
+      objects:[['Pedestrian','At kerb · waiting · 94% conf.'],['Vehicle B','Approaching · 28 km/h'],['Bicycle','Parked · not a hazard']],vehB:['Caution shown — no brake needed','#fbbf24']},
+    highway:{title:'LOW RISK — Road clear',text:'No conflicting trajectories detected. Merge lane is clear and traffic is flowing normally.',risk:14,label:'LOW',cls:'risk-low',color:'#22c55e',alert:'alert-low',
+      objects:[['Vehicle B','Cruising · 78 km/h'],['Truck','Adjacent lane · steady'],['No pedestrians','—']],vehB:['Safe — no warning','#4ade80']}
+  };
+  var current='intersection', dashRunning=true, dashCv=document.getElementById('dashCanvas'), dashState=null, dashOffset=0, dashLast=0;
+  var alertBox=document.getElementById('dashAlert'), alertTitle=document.getElementById('alertTitle'), alertText=document.getElementById('alertText'),
+      riskLabel=document.getElementById('riskLabel'), riskScore=document.getElementById('riskScore'), riskFill=document.getElementById('riskFill'),
+      objList=document.getElementById('objList'), vehB=document.getElementById('vehBStatus');
+
+  function applyScenario(key){
+    current=key; var s=scenarios[key];
+    alertBox.className='alert-box '+s.alert; alertTitle.textContent=s.title; alertText.textContent=s.text;
+    riskLabel.textContent=s.label; riskLabel.className=s.cls; riskLabel.style.fontFamily='var(--display)'; riskLabel.style.fontSize='22px';
+    riskScore.textContent='Risk index '+s.risk+' / 100'; riskFill.style.width=s.risk+'%'; riskFill.style.background=s.color;
+    objList.innerHTML=s.objects.map(function(o){return '<div class="obj-row"><span>'+o[0]+'</span><b style="text-align:right">'+o[1]+'</b></div>'}).join('');
+    vehB.textContent=s.vehB[0]; vehB.style.color=s.vehB[1];
+    document.querySelectorAll('.scenario-btn').forEach(function(b){b.classList.toggle('active',b.dataset.scenario===key)});
+  }
+  document.querySelectorAll('.scenario-btn').forEach(function(b){ b.addEventListener('click',function(){applyScenario(b.dataset.scenario); dashOffset=0;}); });
+  applyScenario('intersection');
+
+  function dashLoop(t){
+    if(dashRunning){
+      if(!dashState) dashState=fitCanvas(dashCv);
+      dashOffset+=16;
+      var localT = current==='intersection' ? dashOffset : (current==='pedestrian' ? 1200+ (dashOffset%3000)*0.3 : 500);
+      drawScene(dashState.ctx,dashState.w,dashState.h,localT,{hud:true});
+    }
+    requestAnimationFrame(dashLoop);
+  }
+  requestAnimationFrame(dashLoop);
+
+  var dashToggle=document.getElementById('dashToggle');
+  dashToggle.addEventListener('click',function(){
+    dashRunning=!dashRunning;
+    dashToggle.textContent=dashRunning?'❚❚ Pause Simulation':'▶ Resume Simulation';
+  });
+  document.getElementById('dashReset').addEventListener('click',function(){ dashOffset=0; applyScenario(current); if(!dashRunning){dashRunning=true;dashToggle.textContent='❚❚ Pause Simulation';} });
+
+  /* Feed clock */
+  var clock=document.getElementById('feedClock');
+  setInterval(function(){ var d=new Date(); clock.textContent=d.toLocaleTimeString('en-GB')+' · SIM'; },1000);
+
+  /* Resize handling */
+  var rz; window.addEventListener('resize',function(){ clearTimeout(rz); rz=setTimeout(function(){ heroState=null; simState=null; dashState=null; if(!simRunning) simDrawOnce(); },200); });
+})();
+</script>
+</body>
+</html>
